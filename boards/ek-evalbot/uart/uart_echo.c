@@ -34,6 +34,10 @@
 #include "driverlib/sysctl.h"
 #include "driverlib/uart.h"
 
+/*
+ * Added by Yong
+*/
+#include "ext_lib/MODBus.h"
 //*****************************************************************************
 //
 //! \addtogroup example_list
@@ -166,5 +170,6 @@ main(void)
     //
     while(1)
     {
+        MOD_Decoder();
     }
 }
