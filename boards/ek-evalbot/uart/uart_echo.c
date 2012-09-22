@@ -38,6 +38,7 @@
  * Added by Yong
 */
 #include "ext_lib/MODBus.h"
+#include <stdint.h>           /*  Support MISRA standard define types*/
 //*****************************************************************************
 //
 //! \addtogroup example_list
@@ -71,7 +72,8 @@ void
 UARTIntHandler(void)
 {
     unsigned long ulStatus;
-
+    uint8_t uart_buff;
+    
     //
     // Get the interrrupt status.
     //
@@ -82,16 +84,52 @@ UARTIntHandler(void)
     //
     ROM_UARTIntClear(UART0_BASE, ulStatus);
 
-    //
-    // Loop while there are characters in the receive FIFO.
-    //
-    while(ROM_UARTCharsAvail(UART0_BASE))
+    /* Check new character in receive FIFO  */
+    if (ROM_UARTCharsAvail(UART0_BASE))
     {
-        //
-        // Read the next character from the UART and write it back to the UART.
-        //
-        ROM_UARTCharPutNonBlocking(UART0_BASE,
-                                   ROM_UARTCharGetNonBlocking(UART0_BASE));
+      /*  Get one character from the receive FIFO  */
+      uart_buff = (uint8_t)ROM_UARTCharGetNonBlocking(UART0_BASE);
+    }
+    else
+    { 
+      /*  No new char in receive FIFO then exit */
+      return;
+    }
+            
+    /*  Is incoming char = ModBus first Frame*/
+    if(uart_buff == STX)
+    {
+        /*  Initialise ModBus Connection*/
+        MODBUS_Reset();
+        return;                               /*  Exit  */
+    }
+    else
+    {
+      /*  Check ModBus Communication activated */
+      if (MODBUS_CONN == 0)
+      {
+        /*  ModBus comminication is not activated yet  */
+        return; 
+      }
+      
+      /*  Register new Frame as new ModBus Frame */
+      MODBUS_NewFrame(uart_buff);
+    }
+
+    /*  Anything needed to send out */
+    if (MODBUS_TX_REQ > 0 )
+    {
+      MODBUS_TX_REQ_CLR;
+      /*  Send data out to UART's TX FIFO */
+      uart_buff = MODBUS_OutFrame_Get();
+      ROM_UARTCharPutNonBlocking(UART0_BASE, uart_buff);
+    }
+    
+    /*  Is Incoming frame is the last frame or Burst Mode is activated*/
+    if (MODBUS_CONN_END_REQ > 0)
+    {
+      MODBUS_CONN_END_REQ_CLR;
+      MODBUS_CONN_END;
     }
 }
 
@@ -163,13 +201,57 @@ main(void)
     //
     // Prompt for text to be entered.
     //
-    UARTSend((unsigned char *)"\033[2JEnter text: ", 16);
-
+    //UARTSend((unsigned char *)"\033[2JEnter text: ", 16);
+    UARTSend((unsigned char *)"v1.00", 5);
     //
     // Loop forever echoing data through the UART.
     //
     while(1)
     {
-        MOD_Decoder();
+      /*  New incoming frame  */
+      if( MODBUS_INCOMING_FRAME > 0 )
+      {
+        MODBUS_INCOMING_FRAME_CLR;
+        
+        /*  Analyse the new frame */
+        MODBUS_Decode();
+        
+//        /*  Analyse valid CTL for immediate response */
+//        if (MODBUS_CTL_READY_SET > 0)
+//        {
+//          MODBUS_CTL_READY_CLR;
+//          if (1)  /*  Is CTL invalid  */
+//          {
+//            /*  Terminate ModBus communication */
+//            MODBUS_CONN_END_REQ_SET;
+//            MODBUS_CONN_END;
+//          }
+//        }
+//        else
+//        {        
+//          /*  Analyse new command for immediate response  */
+//          if (MODBUS_CMD_READY > 0)
+//          {
+//            MODBUS_CMD_READY_CLR;
+//            if (1)  /*  Is any immediate response  */
+//            {
+//              /*  Then update Slave buffer frame  */
+//              
+//            }
+//          }
+//          
+//          /*  Process received data  */
+//          if (MODBUS_DATA_READY > 0)
+//          {
+//            MODBUS_DATA_READY_CLR;
+//            
+//            /*  Echo the contents back to UART  */
+//            
+//          }
+//        }        
+      }
+      
+      /*  Others function routine check */
+      
     }
 }
