@@ -5,6 +5,7 @@
 
 /*  General */
 extern uint16_t MODBUS_status;
+extern uint8_t MODBUS_DirecResp [7];
 
 /*  MODBUS Frame  */
 #define STX         0x02    /*First incoming frame of MODBUS (Host -> Controller)*/
@@ -15,6 +16,8 @@ extern uint16_t MODBUS_status;
 #define SLAVE_DUMMY 0xAA    /*Dummy sent to Host*/
 #define ESC         0x1B    /*ESC char*/
 #define ESC_NOT     0xE4    /*Reverse of ESC char*/
+
+#define DATA_MAX_LENGTH 14  /*Max data content length in both Host & Slave*/
 
 #define MODBUS_CONN         (MODBUS_status & 0x01)      /* bit-0  0000 0001 */
 #define MODBUS_CONN_START   (MODBUS_status |= 0x01)
@@ -53,10 +56,11 @@ extern uint16_t MODBUS_status;
 #define MODBUS_DATA_READY_CLR (MODBUS_status &= 0xFBFF)
 
 
-/*Function Prototype*/
-void MODBUS_Reset(void);
-void MODBUS_NewFrame(uint8_t input);
-uint8_t MODBUS_OutFrame_Get(void);
-void MODBUS_Decode(void);
+/*  Function Prototype  */
+extern void MODBUS_Reset(void);
+extern void MODBUS_NewFrame(uint8_t input);
+extern uint8_t MODBUS_OutFrame_Get(void);
+extern uint8_t MODBUS_Ctl_Get(void);
+extern void MODBUS_Decode(void);
 
 #endif  //__MOD_BUS_H__

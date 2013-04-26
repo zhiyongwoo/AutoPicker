@@ -1,17 +1,16 @@
 #include "ext_lib/MODBus.h"
 
 /*  TODO:
-    a) Terminate MODBUS communication once everything done 
-       - Some CMD required no response.
-    b) Burst Mode not supported
-
-    Tested:
-    a) Host frame lenght > Slave frame length
-    b) Host frame length = Slave frame length (Host has ESC)
-    c) ESC char 
-    d) Example of situation 1 (MODCOM.DOC rev.3)
-    e) Example of situation 2 (MODCOM.DOC rev.3)
-
+/    a) Terminate MODBUS communication once everything done 
+/       - Some CMD required no response.
+/    b) Burst Mode not supported
+/
+/    Tested:
+/    a) Host frame lenght > Slave frame length
+/    b) Host frame length = Slave frame length (Host has ESC)
+/    c) ESC char 
+/    d) Example of situation 1 (MODCOM.DOC rev.3)
+/    e) Example of situation 2 (MODCOM.DOC rev.3)
 */
 
 /*
@@ -35,7 +34,7 @@ typedef struct MODBus_Frame_Host {
   uint8_t cmd;
   uint8_t length;     /*  Stored the max index of data[]  */
   uint8_t checksum;
-  uint8_t data[14];
+  uint8_t data[DATA_MAX_LENGTH];
 }Frame_Host;
 
 typedef struct MODBus_Frame_Slave {
@@ -43,7 +42,7 @@ typedef struct MODBus_Frame_Slave {
   uint8_t length;     /*  Stored the max index of data[]  */
   uint8_t rid;
   uint8_t checksum;
-  uint8_t data[14];   /*  The longest content is 7-byte (buffer 7-byte)  */
+  uint8_t data[DATA_MAX_LENGTH];  /*  The longest content is 7-byte (buffer 7-byte)  */
 }Frame_Slave;
 
 /*  Variable  */
@@ -97,6 +96,11 @@ uint8_t MODBUS_OutFrame_Get(void)
   MODBUS_frame_slave.checksum ^= MODBUS_out_buf_frame;
   
   return MODBUS_out_buf_frame;
+}
+
+uint8_t MODBUS_Ctl_Get(void)
+{
+  return MODBUS_frame_host.ctl;
 }
 
 void MODBUS_Decode(void)

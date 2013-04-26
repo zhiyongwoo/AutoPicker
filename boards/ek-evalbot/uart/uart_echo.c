@@ -38,6 +38,7 @@
  * Added by Yong
 */
 #include "ext_lib/MODBus.h"
+#include "ext_lib/mod_command.h"
 #include <stdint.h>           /*  Support MISRA standard define types*/
 //*****************************************************************************
 //
@@ -106,7 +107,7 @@ UARTIntHandler(void)
     else
     {
       /*  Check ModBus Communication activated */
-      if (MODBUS_CONN == 0)
+      if (MODBUS_CONN == 0u )
       {
         /*  ModBus comminication is not activated yet  */
         return; 
@@ -117,7 +118,7 @@ UARTIntHandler(void)
     }
 
     /*  Anything needed to send out */
-    if (MODBUS_TX_REQ > 0 )
+    if (MODBUS_TX_REQ > 0u )
     {
       MODBUS_TX_REQ_CLR;
       /*  Send data out to UART's TX FIFO */
@@ -126,7 +127,7 @@ UARTIntHandler(void)
     }
     
     /*  Is Incoming frame is the last frame or Burst Mode is activated*/
-    if (MODBUS_CONN_END_REQ > 0)
+    if (MODBUS_CONN_END_REQ > 0u )
     {
       MODBUS_CONN_END_REQ_CLR;
       MODBUS_CONN_END;
@@ -202,33 +203,37 @@ main(void)
     // Prompt for text to be entered.
     //
     //UARTSend((unsigned char *)"\033[2JEnter text: ", 16);
-    UARTSend((unsigned char *)"v1.00", 5);
+    UARTSend((unsigned char *)"v1.00", 5u);
     //
     // Loop forever echoing data through the UART.
     //
     while(1)
     {
       /*  New incoming frame  */
-      if( MODBUS_INCOMING_FRAME > 0 )
+      if( MODBUS_INCOMING_FRAME > 0u )
       {
         MODBUS_INCOMING_FRAME_CLR;
         
         /*  Analyse the new frame */
         MODBUS_Decode();
         
-//        /*  Analyse valid CTL for immediate response */
-//        if (MODBUS_CTL_READY_SET > 0)
-//        {
-//          MODBUS_CTL_READY_CLR;
-//          if (1)  /*  Is CTL invalid  */
-//          {
-//            /*  Terminate ModBus communication */
-//            MODBUS_CONN_END_REQ_SET;
-//            MODBUS_CONN_END;
-//          }
-//        }
-//        else
-//        {        
+        /*  Analyse valid CTL for immediate response */
+        if (MODBUS_CTL_READY > 0u)
+        {
+          MODBUS_CTL_READY_CLR;
+          /*  Is CTL invalid  */
+          uint8_t res = MODBUS_Ctl_Get();
+          res = MODCMD_Ctl_Validation(res);
+          if ( res == 0u )  
+          {
+            /*  Terminate ModBus communication */
+            MODBUS_CONN_END_REQ_SET;
+            MODBUS_CONN_END;
+            UARTSend((unsigned char *)"Invalid CTL\n", 13u);
+          }
+        }
+        else
+        {        
 //          /*  Analyse new command for immediate response  */
 //          if (MODBUS_CMD_READY > 0)
 //          {
@@ -248,7 +253,7 @@ main(void)
 //            /*  Echo the contents back to UART  */
 //            
 //          }
-//        }        
+        }        
       }
       
       /*  Others function routine check */
